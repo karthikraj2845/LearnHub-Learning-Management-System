@@ -4,5 +4,12 @@
 
 /* @import "tailwindcss"; */
 *{
-  font-family: Roboto;
+  font-family: Roboto,sans-serif;
+}
+@theme{
+  --text-home-heading-small: 28px;
+  --text-home-heading-large: 55px;
+
+  --leading-home-heading-small: 34px;
+  --leading-home-heading-large: 56px;
 }
