@@ -30,8 +30,8 @@ const CoursesSection = () => {
         Discover our top-rated courses across various categories. <br />
         From coding and design to business and wellness, our courses are crafted to deliver results.
       </p>
-      <div className="grid grid-cols-auto px-0 md:my-16 my-10 gap-4">
-        {allCourses?.slice(0, 4).map((course, index) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-0 md:my-16 my-10 gap-4">
+        {allCourses?.slice(0, 10).map((course, index) => (
           <CourseCard key={index} course={course} />
         ))}
       </div>
