@@ -5,7 +5,9 @@ import connectDB from './configs/mongodb.js';
 import { clerkWebhooks } from './controllers/webhooks.js';
 
 const app = express();
-
+app.get('/clerk', (req, res) => {
+  res.send('CLERK ROUTE WORKING');
+});
 app.get('/', (req, res) => {
   res.send('API is working 🚀');
 });
