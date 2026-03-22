@@ -5,20 +5,18 @@ import connectDB from './configs/mongodb.js';
 import { clerkWebhooks } from './controllers/webhooks.js';
 
 const app = express();
-app.get('/clerk', (req, res) => {
-  res.send('CLERK ROUTE WORKING');
-});
-app.get('/', (req, res) => {
-  res.send('API is working 🚀');
-});
-app.post('/clerk', clerkWebhooks);
-// ✅ Run locally
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
 
-// ✅ Export for Vercel
+await connectDB();
+
+app.use(cors());
+
+// ❌ DO NOT use express.json() globally
+
+app.get('/', (req, res) => {
+  res.send('API is working');
+});
+
+// ✅ RAW body ONLY for webhook
+app.post('/clerk', express.raw({ type: 'application/json' }), clerkWebhooks);
+
 export default app;
