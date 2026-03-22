@@ -1,131 +1,54 @@
-import { Webhook } from 'svix';
-import Stripe from 'stripe';
-import User from '../../models/User.js';
-import Course from '../models/Course.js';
-import Purchase from '../models/Purchase.js';
+import { Webhook } from 'svix'; // [2]
+import User from '../models/user.js'; // [2]
 
-// Initialize Stripe Instance
-const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// API Controller Function to Manage Clerk User with Database
-export const clerkWebhooks = async (req, res) => {
+// API controller function to manage Clerk user with database
+export const clerkWebhooks = async (req, res) => { // [3]
     try {
-        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET); // [3]
 
         // Verify the headers
-        await whook.verify(JSON.stringify(req.body), {
-            "svix-id": req.headers["svix-id"],
-            "svix-timestamp": req.headers["svix-timestamp"],
-            "svix-signature": req.headers["svix-signature"]
+        await whook.verify(JSON.stringify(req.body), { // [3]
+            "svix-id": req.headers["svix-id"], // [3]
+            "svix-timestamp": req.headers["svix-timestamp"], // [3]
+            "svix-signature": req.headers["svix-signature"] // [4]
         });
 
         // Get the data and type from request body
-        const { data, type } = req.body;
+        const { data, type } = req.body; // [4]
 
         // Switch case for different Clerk events
-        switch (type) {
-            case 'user.created': {
+        switch (type) { // [4]
+            case 'user.created': { // [5]
                 const userData = {
-                    _id: data.id,
-                    email: data.email_addresses.email_address,
-                    name: data.first_name + " " + data.last_name,
-                    imageUrl: data.image_url
+                    _id: data.id, // [5]
+                    email: data.email_addresses.email_address, // [5, 6]
+                    name: data.first_name + " " + data.last_name, // [5]
+                    imageUrl: data.image_url // [5]
                 };
-                await User.create(userData);
-                res.json({});
-                break;
+                await User.create(userData); // [7]
+                res.json({}); // [7]
+                break; // [7]
             }
-            case 'user.updated': {
+            case 'user.updated': { // [7]
                 const userData = {
-                    email: data.email_addresses.email_address,
-                    name: data.first_name + " " + data.last_name,
-                    imageUrl: data.image_url
+                    email: data.email_addresses.email_address, // [6, 7]
+                    name: data.first_name + " " + data.last_name, // [7]
+                    imageUrl: data.image_url // [7]
                 };
-                await User.findByIdAndUpdate(data.id, userData);
-                res.json({});
-                break;
+                await User.findByIdAndUpdate(data.id, userData); // [7]
+                res.json({}); // [7]
+                break; // [7]
             }
-            case 'user.deleted': {
-                await User.findByIdAndDelete(data.id);
-                res.json({});
-                break;
+            case 'user.deleted': { // [8]
+                await User.findByIdAndDelete(data.id); // [8]
+                res.json({}); // [8]
+                break; // [8]
             }
             default:
                 break;
         }
 
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-};
-
-// API Controller Function to Manage Stripe Payment Webhooks
-export const stripeWebhooks = async (req, res) => {
-    try {
-        const signature = req.headers['stripe-signature'];
-
-        // Construct the Stripe event
-        const event = stripeInstance.webhooks.constructEvent(
-            req.body,
-            signature,
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
-
-        // Handle the event
-        switch (event.type) {
-            case 'payment_intent.succeeded': {
-                const paymentIntent = event.data.object;
-                const paymentId = paymentIntent.id;
-
-                // Retrieve the checkout session to get metadata
-                const session = await stripeInstance.checkout.sessions.list({
-                    payment_intent: paymentId
-                });
-
-                const purchaseId = session.data.metadata.purchaseId;
-                const purchaseData = await Purchase.findById(purchaseId);
-                const userData = await User.findById(purchaseData.userId);
-                const courseData = await Course.findById(purchaseData.courseId.toString());
-
-                // Update course and user enrollment data
-                courseData.enrolledStudents.push(userData);
-                await courseData.save();
-
-                userData.enrolledCourses.push(courseData._id);
-                await userData.save();
-
-                // Update purchase status
-                purchaseData.status = 'completed';
-                await purchaseData.save();
-
-                break;
-            }
-            case 'payment_intent.payment_failed': {
-                const paymentIntent = event.data.object;
-                const paymentId = paymentIntent.id;
-
-                const session = await stripeInstance.checkout.sessions.list({
-                    payment_intent: paymentId
-                });
-
-                const purchaseId = session.data.metadata.purchaseId;
-                const purchaseData = await Purchase.findById(purchaseId);
-
-                // Update purchase status
-                purchaseData.status = 'failed';
-                await purchaseData.save();
-
-                break;
-            }
-            default:
-                console.log("Unhandled event type", event.type);
-                break;
-        }
-
-        // Return a response to acknowledge receipt of the event
-        res.json({ received: true });
-
-    } catch (error) {
-        res.json({ success: false, message: error.message });
+    } catch (error) { 
+        res.json({ success: false, message: error.message }); 
     }
 };
