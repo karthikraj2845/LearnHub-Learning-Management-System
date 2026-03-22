@@ -1,48 +1,46 @@
-import { Webhook } from 'svix'; // [2]
-import User from '../models/user.js'; // [2]
-
+import { Webhook } from 'svix'; 
+import User from '../models/user.js';
 // API controller function to manage Clerk user with database
-export const clerkWebhooks = async (req, res) => { // [3]
+export const clerkWebhooks = async (req, res) => { 
     try {
-        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET); // [3]
+        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET); 
 
         // Verify the headers
-        await whook.verify(JSON.stringify(req.body), { // [3]
-            "svix-id": req.headers["svix-id"], // [3]
-            "svix-timestamp": req.headers["svix-timestamp"], // [3]
-            "svix-signature": req.headers["svix-signature"] // [4]
+        await whook.verify(JSON.stringify(req.body), {
+            "svix-id": req.headers["svix-id"], 
+            "svix-timestamp": req.headers["svix-timestamp"], 
+            "svix-signature": req.headers["svix-signature"] 
         });
 
         // Get the data and type from request body
-        const { data, type } = req.body; // [4]
+        const { data, type } = req.body; 
 
         // Switch case for different Clerk events
-        switch (type) { // [4]
-            case 'user.created': { // [5]
+        switch (type) { 
+            case 'user.created': { 
                 const userData = {
-                    _id: data.id, // [5]
-                    email: data.email_addresses.email_address, // [5, 6]
-                    name: data.first_name + " " + data.last_name, // [5]
-                    imageUrl: data.image_url // [5]
+                    _id: data.id,
+                    email: data.email_addresses[0].email_address, 
+                    name: data.first_name + " " + data.last_name, 
+                    imageUrl: data.image_url 
                 };
-                await User.create(userData); // [7]
-                res.json({}); // [7]
-                break; // [7]
+                await User.create(userData); 
+                res.json({}); 
+                break; 
             }
-            case 'user.updated': { // [7]
+            case 'user.updated': {
                 const userData = {
-                    email: data.email_addresses.email_address, // [6, 7]
-                    name: data.first_name + " " + data.last_name, // [7]
-                    imageUrl: data.image_url // [7]
+                    email: data.email_addresses.email_address, 
+                    name: data.first_name + " " + data.last_name, 
+                    imageUrl: data.image_url 
                 };
-                await User.findByIdAndUpdate(data.id, userData); // [7]
-                res.json({}); // [7]
-                break; // [7]
+                await User.findByIdAndUpdate(data.id, userData); 
+                res.json({}); 
+                break; 
             }
-            case 'user.deleted': { // [8]
-                await User.findByIdAndDelete(data.id); // [8]
-                res.json({}); // [8]
-                break; // [8]
+            case 'user.deleted': { 
+                await User.findByIdAndDelete(data.id);
+                break; 
             }
             default:
                 break;
