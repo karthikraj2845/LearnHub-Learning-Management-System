@@ -12,27 +12,29 @@ import Dashboard from './pages/educator/Dashboard'
 import Educator from './pages/educator/Educator'
 import MyCourses from './pages/educator/MyCourses'
 import Navbar from './components/student/Navbar'
+import "quill/dist/quill.snow.css";
 const App = () => {
-  // const isEducatorRoute = useMatch('/educator/*')
+  const isEducatorRoute = useMatch('/educator/*')
   return (
     <div className='text-default min-h-screen bg-white'>
-      <Navbar />
-      <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/course-list' element={<CoursesList />} />
-        <Route path='/course-list/:input' element={<CoursesList />} />  
-        <Route path='/course/:id' element={<CourseDetails />} />
-        <Route path='/my-enrollments' element={<MyEnrollments />} />
-        <Route path='/player/:courseId' element={<Player />} />
-        <Route path='/loading/:path' element={<Loading />} />
-        <Route path='/educator' element={<Educator />} >
-          <Route index element={<Dashboard />} />
-          <Route path='add-course' element={<AddCourse />} />
-          <Route path='my-courses' element={<MyCourses />} />
-          <Route path='student-enrolled' element={<StudentsEnrolled />} />
-        </Route>
-      </Routes>
-    </div>
+  {!isEducatorRoute && <Navbar />}
+  <Routes>
+    <Route path='/' element={<Home />} />
+    <Route path='/course-list' element={<CoursesList />} />
+    <Route path='/course-list/:input' element={<CoursesList />} />  
+    <Route path='/course/:id' element={<CourseDetails />} />
+    <Route path='/my-enrollments' element={<MyEnrollments />} />
+    <Route path='/player/:courseId' element={<Player />} />
+    <Route path='/loading/:path' element={<Loading />} />
+    
+    <Route path='/educator' element={<Educator />} >
+      <Route index element={<Dashboard />} />
+      <Route path='add-course' element={<AddCourse />} /> [1]
+      <Route path='my-courses' element={<MyCourses />} /> [1]
+      <Route path='student-enrolled' element={<StudentsEnrolled />} /> [1]
+    </Route>
+  </Routes>
+</div>
   )
 }
 
