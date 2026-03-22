@@ -23,7 +23,7 @@ const app = express();
 app.get('/', (req, res) => {
   res.send('API is working 🚀');
 });
-
+app.post('/clerk', clerkWebhooks);
 // ✅ Run locally
 if (process.env.NODE_ENV !== 'production') {
   const PORT = 5000;
