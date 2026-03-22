@@ -1,17 +1,17 @@
 import express from "express";
 import cors from "cors";
-import connectDB from "./configs/mongodb.js";
-import { clerkWebhooks } from "./controllers/webhooks.js";
 
 const app = express();
 
-await connectDB();
-
 app.use(cors());
 
-// ⚠️ IMPORTANT: use raw body for webhook
-app.post("/clerk", express.raw({ type: "application/json" }), clerkWebhooks);
+// 👉 REPLACE ONLY THIS PART
+app.post("/clerk", (req, res) => {
+  console.log("CLERK HIT ✅");
+  res.status(200).json({ success: true });
+});
 
+// existing route
 app.get("/", (req, res) => {
   res.send("API is working 🚀");
 });
