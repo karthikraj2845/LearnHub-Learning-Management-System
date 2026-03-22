@@ -1,56 +1,54 @@
-// import { Webhook } from 'svix';
-// import User from '../models/User.js';
+import { Webhook } from 'svix'; // [2]
+import User from '../models/User.js'; // [2]
 
-// export const clerkWebhooks = async (req, res) => {
-//   try {
-//     const payload = req.body;
+// API Controller Function to Manage Clerk User with Database
+export const clerkWebhooks = async (req, res) => { // [4]
+    try {
+        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET); // [4]
 
-//     const headers = {
-//       "svix-id": req.headers["svix-id"],
-//       "svix-timestamp": req.headers["svix-timestamp"],
-//       "svix-signature": req.headers["svix-signature"],
-//     };
+        // Verify the headers
+        await whook.verify(JSON.stringify(req.body), { // [4]
+            "svix-id": req.headers["svix-id"], // [3]
+            "svix-timestamp": req.headers["svix-timestamp"], // [3]
+            "svix-signature": req.headers["svix-signature"] // [3]
+        });
 
-//     // 🔥 DEBUG LOG (VERY IMPORTANT)
-//     console.log("HEADERS:", headers);
+        // Get the data and type from request body
+        const { data, type } = req.body; // [3]
 
-//     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+        // Switch case for different Clerk events
+        switch (type) { // [3]
+            case 'user.created': { // [5]
+                const userData = {
+                    _id: data.id,
+                    email: data.email_addresses.email_address, // [1]
+                    name: data.first_name + " " + data.last_name, // [5]
+                    imageUrl: data.image_url // [5]
+                };
+                await User.create(userData); // [6]
+                res.json({}); // [6]
+                break;
+            }
+            case 'user.updated': { // [6]
+                const userData = {
+                    email: data.email_addresses.email_address, // [1]
+                    name: data.first_name + " " + data.last_name, // [6]
+                    imageUrl: data.image_url // [6]
+                };
+                await User.findByIdAndUpdate(data.id, userData); // [6]
+                res.json({}); // [6]
+                break;
+            }
+            case 'user.deleted': { // [7]
+                await User.findByIdAndDelete(data.id); // [7]
+                res.json({}); // [7]
+                break;
+            }
+            default:
+                break;
+        }
 
-//     const event = whook.verify(payload, headers);
-
-//     console.log("EVENT RECEIVED:", event.type); // 👈 MUST PRINT
-
-//     const { data, type } = event;
-
-//     if (type === "user.created") {
-//       await User.create({
-//         _id: data.id,
-//         email: data.email_addresses[0].email_address,
-//         name: `${data.first_name} ${data.last_name}`,
-//         imageUrl: data.image_url,
-//       });
-//     }
-
-//     if (type === "user.updated") {
-//       await User.findByIdAndUpdate(data.id, {
-//         email: data.email_addresses[0].email_address,
-//         name: `${data.first_name} ${data.last_name}`,
-//         imageUrl: data.image_url,
-//       });
-//     }
-
-//     if (type === "user.deleted") {
-//       await User.findByIdAndDelete(data.id);
-//     }
-
-//     return res.status(200).json({ success: true });
-
-//   } catch (error) {
-//     console.log("❌ WEBHOOK ERROR:", error.message);
-//     return res.status(400).json({ error: error.message });
-//   }
-// };
-app.post("/clerk", (req, res) => {
-  console.log("CLERK HIT ✅");
-  res.status(200).json({ success: true });
-});
+    } catch (error) { // [7]
+        res.json({ success: false, message: error.message }); // [1]
+    }
+};

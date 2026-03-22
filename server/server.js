@@ -1,19 +1,30 @@
-import express from "express";
-import cors from "cors";
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
+import connectDB from './configs/mongodb.js';
+import { clerkWebhooks } from './controllers/webhooks.js';
 
 const app = express();
 
+// DB
+await connectDB();
+
+// Middlewares
 app.use(cors());
 
-// 👉 REPLACE ONLY THIS PART
-app.post("/clerk", (req, res) => {
-  console.log("CLERK HIT ✅");
-  res.status(200).json({ success: true });
+// ❗ Normal JSON routes (if any)
+app.use(express.json());
+
+// Test route
+app.get('/', (req, res) => {
+  res.send('API working');
 });
 
-// existing route
-app.get("/", (req, res) => {
-  res.send("API is working 🚀");
-});
+// ✅ Webhook route (RAW BODY ONLY)
+app.post('/clerk', express.raw({ type: 'application/json' }), clerkWebhooks);
 
-export default app;
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
