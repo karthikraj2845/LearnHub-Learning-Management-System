@@ -1,15 +1,15 @@
-import mongoose from 'mongoose'; 
+import mongoose from 'mongoose';
 
-// connect to the mongod DB database
-const connectDB = async () => { 
-    
-    // 1. Register an event listener to confirm connection
+// connect to MongoDB
+const connectDB = async () => {
+
     mongoose.connection.on('connected', () => {
-        console.log("database connected"); 
+        console.log("database connected");
     });
 
-    // 2. Connect to the database using the environment variable and append the database name
-    await mongoose.connect(`${process.env.MONGODB_URI}/learnhub`); 
+    await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: "learnhub", // ✅ correct way
+    });
 };
 
-export default connectDB; 
+export default connectDB;
