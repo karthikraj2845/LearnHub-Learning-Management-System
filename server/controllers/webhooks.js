@@ -1,18 +1,22 @@
 import { Webhook } from "svix";
 import User from "../models/User.js";
+
 export const clerkWebhooks = async (req, res) => {
   try {
     console.log("🔥 WEBHOOK HIT");
 
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
+    // ✅ Pass RAW body (Buffer)
     await whook.verify(req.body, {
       "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
     });
 
+    // ✅ Convert buffer → JSON
     const body = JSON.parse(req.body.toString());
+
     const { data, type } = body;
 
     console.log("TYPE:", type);
