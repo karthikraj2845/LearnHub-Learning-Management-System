@@ -9,7 +9,7 @@ const connectDB = async () => {
     });
 
     // 2. Connect to the database using the environment variable and append the database name
-    await mongoose.connect(`${process.env.MONGODB_URI}/lms`); 
+    await mongoose.connect(`${process.env.MONGODB_URI}/learnhub`); 
 };
 
 export default connectDB; 
