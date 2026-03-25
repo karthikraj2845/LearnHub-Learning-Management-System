@@ -1,15 +1,17 @@
 import { dummyCourses } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
-import { createContext, useEffect, useState } from "react";
+import { createContext, use, useEffect, useState } from "react";
 import humanizeDuration from "humanize-duration";
+import { useAuth, useUser } from "@clerk/clerk-react";
 export const AppContext = createContext(); // [4]
 export const AppContextProvider = (props) => { // [5]
     
     // Environment Variables & Routing
     const currency = import.meta.env.VITE_CURRENCY; // [6]
     const navigate = useNavigate(); // [7]
-
-    // Global States
+    const {getToken} = useAuth();
+    const {user} = useUser();
+    // Global States 
     const [allCourses, setAllCourses] = useState([]); // [1]
     const [isEducator, setIsEducator] = useState(true); // [3]
     const [enrolledCourses, setEnrolledCourses] = useState([]); // [8]
@@ -72,6 +74,17 @@ export const AppContextProvider = (props) => { // [5]
         fetchAllCourses(); // [18]
         fetchUserEnrolledCourses(); // [19]
     }, []);
+    const logToken = async () => {
+        const token = 
+        await getToken();
+        console.log("USER:", user);
+        console.log("User Token:", token);
+    }
+    useEffect(() => {
+        if(user){
+            logToken();
+        }
+    }, [user]);
 
     // Bundle all states and functions to share globally
     const value = {

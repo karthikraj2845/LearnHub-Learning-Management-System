@@ -15,6 +15,7 @@ import Navbar from './components/student/Navbar'
 import "quill/dist/quill.snow.css";
 const App = () => {
   const isEducatorRoute = useMatch('/educator/*')
+  console.log(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
   return (
     <div className='text-default min-h-screen bg-white'>
   {!isEducatorRoute && <Navbar />}

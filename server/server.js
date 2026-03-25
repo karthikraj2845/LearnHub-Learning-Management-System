@@ -3,33 +3,51 @@ import cors from "cors";
 import "dotenv/config";
 import connectDB from "./configs/mongodb.js";
 import { clerkWebhooks } from "./controllers/webhooks.js";
+import educatorRouter from "./routes/educatorRoutes.js";
+import { clerkMiddleware } from "@clerk/express";
+import connectCloudinary from "./configs/cloudinary.js";
 
 const app = express();
 
 // DB
 await connectDB();
+await connectCloudinary();
 
 app.use(cors());
 
-// ❌ DO NOT put express.json() here
+// ✅ Clerk middleware (IMPORTANT FIX)
+app.use(
+  clerkMiddleware({
+    secretKey: process.env.CLERK_SECRET_KEY,
+  })
+);
 
-// ✅ WEBHOOK FIRST (RAW BODY)
+// ❌ DO NOT put express.json() before webhook
 app.post(
   "/clerk",
   express.raw({ type: "application/json" }),
   clerkWebhooks
 );
 
-// ✅ NOW you can use JSON for other routes
+// ✅ JSON middleware
 app.use(express.json());
 
-// test route
+// ✅ Logger
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
+
+// Test route
 app.get("/", (req, res) => {
   res.send("API working");
 });
 
+// Routes
+app.use("/api/educator", educatorRouter);
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log("Server running");
+  console.log("Server running on port", PORT);
 });
