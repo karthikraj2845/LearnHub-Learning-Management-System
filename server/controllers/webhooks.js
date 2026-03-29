@@ -67,21 +67,33 @@ export const stripeWebhooks = async (req, res) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
 
-        const purchaseId = session.metadata.purchaseId;
+        const purchaseId = session.metadata?.purchaseId;
+        if (!purchaseId) throw new Error("purchaseId missing");
 
         const purchaseData = await Purchase.findById(purchaseId);
+        if (!purchaseData) throw new Error("Purchase not found");
+
+        // Prevent duplicate execution
+        if (purchaseData.status === 'completed') break;
+
         const userData = await User.findById(purchaseData.userId);
         const courseData = await Course.findById(purchaseData.courseId);
 
-        // Add user to course
-        courseData.enrolledStudents.push(userData._id);
-        await courseData.save();
+        if (!userData || !courseData) {
+          throw new Error("User or Course not found");
+        }
 
-        // Add course to user
-        userData.enrolledCourses.push(courseData._id);
-        await userData.save();
+        // Avoid duplicate entries
+        if (!courseData.enrolledStudents.includes(userData._id)) {
+          courseData.enrolledStudents.push(userData._id);
+          await courseData.save();
+        }
 
-        // Update purchase
+        if (!userData.enrolledCourses.includes(courseData._id)) {
+          userData.enrolledCourses.push(courseData._id);
+          await userData.save();
+        }
+
         purchaseData.status = 'completed';
         await purchaseData.save();
 
