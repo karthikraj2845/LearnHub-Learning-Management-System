@@ -1,11 +1,13 @@
 import { Webhook } from "svix";
 import User from "../models/User.js";
+import Course from "../models/Course.js";
+import Purchase from "../models/Purchase.js";
+import Stripe from "stripe";
 
 export const clerkWebhooks = async (req, res) => {
   try {
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-    // ✅ Use RAW payload
     const payload = req.body.toString();
 
     await whook.verify(payload, {
@@ -14,45 +16,106 @@ export const clerkWebhooks = async (req, res) => {
       "svix-signature": req.headers["svix-signature"],
     });
 
-    // ✅ Parse after verification
     const { data, type } = JSON.parse(payload);
 
+    console.log("Webhook event:", type);
+
+    const userData = {
+      _id: data.id,
+      email: data.email_addresses?.[0]?.email_address || "",
+      name: `${data.first_name || ""} ${data.last_name || ""}`.trim() || "User",
+      imageUrl: data.image_url || ""
+    };
+
     switch (type) {
-      case "user.created": {
-        const userData = {
-          _id: data.id,
-          email: data.email_addresses[0]?.email_address,
-          name: `${data.first_name || ""} ${data.last_name || ""}`,
-          imageUrl: data.image_url,
-        };
-
-        console.log("Saving user:", userData);
-
-        await User.create(userData);
+      case "user.created":
+      case "user.updated":
+        await User.findByIdAndUpdate(
+          data.id,
+          userData,
+          { upsert: true, new: true }
+        );
+        console.log("✅ User saved/updated");
         break;
-      }
 
-      case "user.updated": {
-        const userData = {
-          email: data.email_addresses[0]?.email_address,
-          name: `${data.first_name || ""} ${data.last_name || ""}`,
-          imageUrl: data.image_url,
-        };
-
-        await User.findByIdAndUpdate(data.id, userData);
-        break;
-      }
-
-      case "user.deleted": {
+      case "user.deleted":
         await User.findByIdAndDelete(data.id);
+        console.log("🗑️ User deleted");
         break;
-      }
     }
 
     res.status(200).json({ success: true });
 
   } catch (error) {
-    console.log("❌ ERROR:", error.message);
+    console.log("❌ WEBHOOK ERROR:", error.message);
     res.status(400).json({ success: false });
+  }
+};
+const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+export const stripeWebhooks = async (req, res) => {
+  try {
+    const signature = req.headers['stripe-signature'];
+
+    const event = stripeInstance.webhooks.constructEvent(
+      req.body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    switch (event.type) {
+
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+
+        const purchaseId = session.metadata.purchaseId;
+
+        const purchaseData = await Purchase.findById(purchaseId);
+        const userData = await User.findById(purchaseData.userId);
+        const courseData = await Course.findById(purchaseData.courseId);
+
+        // Add user to course
+        courseData.enrolledStudents.push(userData._id);
+        await courseData.save();
+
+        // Add course to user
+        userData.enrolledCourses.push(courseData._id);
+        await userData.save();
+
+        // Update purchase
+        purchaseData.status = 'completed';
+        await purchaseData.save();
+
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object;
+
+        const purchaseId = paymentIntent.metadata?.purchaseId;
+
+        if (!purchaseId) break; // avoid crash
+
+        const purchaseData = await Purchase.findById(purchaseId);
+
+        if (!purchaseData) break;
+
+        // Only mark failed if not already completed
+        if (purchaseData.status !== 'completed') {
+          purchaseData.status = 'failed';
+          await purchaseData.save();
+        }
+
+        break;
+      }
+
+      default:
+        console.log("Unhandled event type:", event.type);
+    }
+
+    res.json({ received: true });
+
+  } catch (error) {
+    console.error(error);
+    res.status(400).send(`Webhook Error: ${error.message}`);
   }
 };

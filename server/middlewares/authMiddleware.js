@@ -59,3 +59,42 @@ export const protectEducator = async (req, res, next) => {
     });
   }
 };
+export const protect = (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "No token"
+            });
+        }
+
+        const base64 = token.split(".")[1]
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+        const payload = JSON.parse(
+            Buffer.from(base64, "base64").toString()
+        );
+
+        const userId = payload?.sub;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid user"
+            });
+        }
+
+        req.userId = userId;
+
+        next();
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
