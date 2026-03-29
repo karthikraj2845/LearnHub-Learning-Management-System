@@ -29,6 +29,7 @@ app.post(
   express.raw({ type: "application/json" }),
   clerkWebhooks
 );
+app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
 
 // ✅ JSON middleware
 app.use(express.json());
@@ -48,8 +49,6 @@ app.get("/", (req, res) => {
 app.use("/api/educator", educatorRouter);
 app.use("/api/course", courseRouter);
 app.use("/api/user", userRouter);
-app.post("/clerk", express.raw({ type: "application/json" }), clerkWebhooks);  
-app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
 
 const PORT = process.env.PORT || 5000;
 
