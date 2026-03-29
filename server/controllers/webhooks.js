@@ -67,14 +67,18 @@ export const stripeWebhooks = async (req, res) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
 
+        console.log("METADATA:", session.metadata);
+
         const purchaseId = session.metadata?.purchaseId;
-        if (!purchaseId) throw new Error("purchaseId missing");
+
+        if (!purchaseId) {
+          throw new Error("purchaseId missing in metadata");
+        }
 
         const purchaseData = await Purchase.findById(purchaseId);
-        if (!purchaseData) throw new Error("Purchase not found");
-
-        // Prevent duplicate execution
-        if (purchaseData.status === 'completed') break;
+        if (!purchaseData) {
+          throw new Error("Purchase not found");
+        }
 
         const userData = await User.findById(purchaseData.userId);
         const courseData = await Course.findById(purchaseData.courseId);
@@ -83,16 +87,13 @@ export const stripeWebhooks = async (req, res) => {
           throw new Error("User or Course not found");
         }
 
-        // Avoid duplicate entries
-        if (!courseData.enrolledStudents.includes(userData._id)) {
-          courseData.enrolledStudents.push(userData._id);
-          await courseData.save();
-        }
+        if (purchaseData.status === 'completed') break;
 
-        if (!userData.enrolledCourses.includes(courseData._id)) {
-          userData.enrolledCourses.push(courseData._id);
-          await userData.save();
-        }
+        courseData.enrolledStudents.push(userData._id);
+        await courseData.save();
+
+        userData.enrolledCourses.push(courseData._id);
+        await userData.save();
 
         purchaseData.status = 'completed';
         await purchaseData.save();
