@@ -89,11 +89,18 @@ export const stripeWebhooks = async (req, res) => {
 
         if (purchaseData.status === 'completed') break;
 
-        courseData.enrolledStudents.push(userData._id);
-        await courseData.save();
+        // courseData.enrolledStudents.push(userData._id);
+        // await courseData.save();
 
-        userData.enrolledCourses.push(courseData._id);
-        await userData.save();
+        // userData.enrolledCourses.push(courseData._id);
+        // await userData.save();
+        await Course.findByIdAndUpdate(courseData._id, {
+          $addToSet: { enrolledStudents: userData._id }
+        });
+
+        await User.findByIdAndUpdate(userData._id, {
+          $addToSet: { enrolledCourses: courseData._id }
+        });
 
         purchaseData.status = 'completed';
         await purchaseData.save();
